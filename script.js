@@ -179,10 +179,10 @@ function renderVisualization(letters) {
   }
 
   const width = 1000;
-  const height = 200;
+  const height = 250;
   const left = 30;
   const right = width - 30;
-  const baseline = 160;
+  const baseline = 200;
 
   const css = getComputedStyle(document.body);
   const accent = css.getPropertyValue("--accent").trim();
@@ -233,7 +233,7 @@ function renderVisualization(letters) {
 
       const x1 = x(previous);
       const x2 = x(current);
-      const arcHeight = Math.min(35 + i * 18, 210);
+      const arcHeight = Math.min(35 + i * 100, 250);
       const middleX = (x1 + x2) / 2;
       const controlY = baseline - arcHeight;
 

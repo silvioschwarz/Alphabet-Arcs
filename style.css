@@ -285,7 +285,6 @@ input:focus {
 }
 
 footer {
-  padding: 12px 10px;
   color: var(--muted);
   text-align: center;
   font-size: 12px;
