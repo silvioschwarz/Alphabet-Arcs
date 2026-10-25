@@ -344,6 +344,14 @@ input:focus {
   color: var(--accent);
 }
 
+.metrics.metrics-hidden {
+  display: none !important;
+}
+
+.letterdetails.letterdetails-hidden {
+  display: none !important;
+}
+
 .letter-details {
   color: var(--muted);
   font-size: 13px;

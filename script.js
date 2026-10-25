@@ -695,6 +695,8 @@ if (visualizationToggle) {
 
     const container = document.getElementById("visualization");
     const metrics = document.querySelector(".metrics");
+    const letterdetails = document.querySelector(".letterdetails");
+
     const isCircular = visualizationMode === "circle";
 
     if (container) {
@@ -703,6 +705,7 @@ if (visualizationToggle) {
 
     if (metrics) {
       metrics.classList.toggle("metrics-hidden", isCircular);
+      letterdetails.classList.toggle("letterdetails-hidden", isCircular);
     }
 
     renderVisualization(getLetters(input.value));
