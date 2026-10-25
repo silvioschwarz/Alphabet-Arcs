@@ -30,7 +30,7 @@ body.dark {
 
 body {
   margin: 0;
-  padding: 30px 18px 50px;
+  height: 100%;
   background:
     radial-gradient(ellipse at 50% 0%, rgba(143, 105, 240, .12), transparent 55%),
     var(--bg);
@@ -179,8 +179,9 @@ input:focus {
 
 .metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
+  margin-bottom: 20px;
 }
 
 .metric {

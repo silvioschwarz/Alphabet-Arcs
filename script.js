@@ -149,10 +149,10 @@ function renderVisualization(letters) {
   }
 
   const width = 1000;
-  const height = 320;
+  const height = 200;
   const left = 30;
   const right = width - 30;
-  const baseline = 260;
+  const baseline = 160;
 
   const css = getComputedStyle(document.body);
   const accent = css.getPropertyValue("--accent").trim();
@@ -304,7 +304,7 @@ function update() {
     getScrabbleScore(rawName);
 
   document.getElementById("scrabbleDetail").textContent =
-    "Summe der deutschen Scrabble-Buchstabenwerte";
+    "Summe im deutschen Scrabble";
 
   document.getElementById("primeValue").textContent =
     distinctFactors.length ? distinctFactors.join(", ") : "Keine";
