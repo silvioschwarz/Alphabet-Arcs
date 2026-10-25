@@ -740,3 +740,125 @@ themeToggle.textContent =
 
 // Initial render
 update();
+
+
+// =============================================
+// 9. DOWNLOAD GRAPHICS
+// =============================================
+
+function downloadSVG() {
+  const svg = document.querySelector("#visualization svg");
+
+  if (!svg) {
+    alert("Keine Grafik zum Herunterladen gefunden.");
+    return;
+  }
+
+  const clone = svg.cloneNode(true);
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+  const svgString = new XMLSerializer().serializeToString(clone);
+  const blob = new Blob([svgString], {
+    type: "image/svg+xml;charset=utf-8"
+  });
+
+downloadBlob(blob, getDownloadFilename("svg"));
+}
+
+function getDownloadFilename(extension) {
+  // "nameInput" durch die ID deines Namensfelds ersetzen
+  const name = document.getElementById("nameInput").value.trim();
+
+  // Ungültige Zeichen für Dateinamen entfernen
+  const safeName = name
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
+    .trim();
+
+  return `${"alphabet-arcs_" + safeName || "alphabet-arcs"}.${extension}`;
+}
+
+function downloadRaster(format) {
+  const svg = document.querySelector("#visualization svg");
+
+  if (!svg) {
+    alert("Keine Grafik zum Herunterladen gefunden.");
+    return;
+  }
+
+  const clone = svg.cloneNode(true);
+  clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+
+  const viewBox = clone.viewBox.baseVal;
+  const width = viewBox.width || 600;
+  const height = viewBox.height || 400;
+  const scale = 2;
+
+  clone.setAttribute("width", width * scale);
+  clone.setAttribute("height", height * scale);
+
+  const svgString = new XMLSerializer().serializeToString(clone);
+  const svgBlob = new Blob([svgString], {
+    type: "image/svg+xml;charset=utf-8"
+  });
+  const url = URL.createObjectURL(svgBlob);
+  const image = new Image();
+
+  image.onload = function () {
+    const canvas = document.createElement("canvas");
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+
+    const context = canvas.getContext("2d");
+
+    // JPG unterstützt keine Transparenz.
+    // Weißer Hintergrund verhindert schwarze oder transparente Flächen.
+    if (format === "jpg") {
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    URL.revokeObjectURL(url);
+
+    const mimeType = format === "jpg" ? "image/jpeg" : "image/png";
+    const extension = format === "jpg" ? "jpg" : "png";
+
+    canvas.toBlob(function (blob) {
+      if (!blob) {
+        alert("Die Grafik konnte nicht exportiert werden.");
+        return;
+      }
+
+downloadBlob(blob, getDownloadFilename(extension));
+    }, mimeType, 0.95);
+  };
+
+  image.onerror = function () {
+    URL.revokeObjectURL(url);
+    alert("Die Grafik konnte nicht exportiert werden.");
+  };
+
+  image.src = url;
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+document.getElementById("downloadSVG")
+  .addEventListener("click", downloadSVG);
+
+document.getElementById("downloadPNG")
+  .addEventListener("click", () => downloadRaster("png"));
+
+document.getElementById("downloadJPG")
+  .addEventListener("click", () => downloadRaster("jpg"));

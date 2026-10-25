@@ -207,6 +207,38 @@ input:focus {
   margin: 0 auto;
 }
 
+.visual-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.download-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 0;
+  margin-left: auto;
+}
+
+.download-buttons button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: #333;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+}
+
+.download-buttons button:hover {
+  opacity: 0.8;
+}
+
 /* Metrikkarten im Kreismodus ausblenden */
 .metrics.metrics-hidden {
   display: none !important;
