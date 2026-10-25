@@ -157,26 +157,54 @@ input:focus {
   line-height: 1.6;
 }
 
-.visual-card {
-  overflow: hidden;
-}
-
 .visual-header {
   text-align: center;
 }
 
+/* Visualisierungskarte */
+.visual-card {
+  height: auto;
+  max-height: 20dvw;
+  overflow: visible;
+}
+
+/* Visualisierungsbereich */
 #visualization {
+  display: flex;
+  flex-direction: column; 
   width: 100%;
-  margin-top: 14px;
+  min-width: 0;
+  max-height: 30dvh;
+  margin: 0 auto;
+  overflow: visible;
+  box-sizing: border-box;
 }
 
 #visualization svg {
   display: block;
   width: 100%;
   height: auto;
-  overflow: visible;
 }
 
+/* Kreisdiagramm */
+#visualization.circular-mode {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-height: 30dvh;
+  margin: 0 0;
+}
+
+#visualization.circular-mode svg {
+  display: block;
+  width: 100%;
+  }
+
+/* Metrikkarten im Kreismodus ausblenden */
+.metrics.metrics-hidden {
+  display: none !important;
+}
 .metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -188,6 +216,7 @@ input:focus {
   min-width: 0;
   margin: 0;
 }
+
 
 .metric-label {
   margin-bottom: 13px;
@@ -332,5 +361,52 @@ footer {
   *, *::before, *::after {
     scroll-behavior: auto !important;
     transition-duration: .01ms !important;
+  }
+}
+
+/* Visualization toggle button */
+#visualizationToggle {
+  display: inline-block;
+  margin: 12px 0 20px;
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease,
+              transform 0.2s ease;
+}
+
+#visualizationToggle:hover {
+  background: var(--line);
+  transform: translateY(-1px);
+}
+
+#visualizationToggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Visualization container */
+#visualization {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+#visualization svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Smaller screens */
+@media (max-width: 600px) {
+  #visualizationToggle {
+    width: 100%;
+    margin-bottom: 14px;
   }
 }

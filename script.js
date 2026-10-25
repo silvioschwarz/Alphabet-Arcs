@@ -1,9 +1,10 @@
 const input = document.getElementById("nameInput");
-input.addEventListener("focus", () => {
-  input.value = "";
-});
 const themeToggle = document.getElementById("themeToggle");
+const visualizationToggle = document.getElementById("visualizationToggle");
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+let visualizationMode = "linear";
+let visualizationRun = 0;
 
 const scrabblePoints = {
   A: 1,
@@ -127,7 +128,10 @@ function getPrimeFactors(number) {
     }
   }
 
-  if (n > 1) factors.push(n);
+  if (n > 1) {
+    factors.push(n);
+  }
+
   return factors;
 }
 
@@ -147,29 +151,62 @@ function getScrabbleScore(rawName) {
   return score;
 }
 
-function animatePath(path) {
-  const length = path.node().getTotalLength();
+function getArcColorScale() {
+    return () => "#7863e9";
+
+//    return d3
+//    .scaleLinear()
+//    .domain([0, 0.33, 0.66, 1])
+//    .range(["#22c55e", "#eab308", "#f97316", "#ef4444"])
+//    .interpolate(d3.interpolateRgb);
+//    -->
+}
+
+async function animatePath(path, runId) {
+  if (runId !== visualizationRun) {
+    return;
+  }
+
+  const node = path.node();
+
+  if (!node) {
+    return;
+  }
+
+  const length = node.getTotalLength();
 
   path
-    .interrupt()
     .attr("stroke-dasharray", `${length} ${length}`)
     .attr("stroke-dashoffset", length);
 
-  return path
-    .transition()
-    .duration(2000) // Jeder Bogen wird in 2 Sekunden gezeichnet
-    .ease(d3.easeCubicInOut)
-    .attr("stroke-dashoffset", 0)
-    .end()
-    .then(() => {
-      path
-        .attr("stroke-dasharray", null)
-        .attr("stroke-dashoffset", null);
-    });
+  try {
+    await path
+      .transition()
+      .duration(1800)
+      .ease(d3.easeCubicInOut)
+      .attr("stroke-dashoffset", 0)
+      .end();
+  } catch (error) {
+    // A newer render may interrupt this transition.
+    return;
+  }
+
+  if (runId === visualizationRun) {
+    path.attr("stroke-dasharray", null).attr("stroke-dashoffset", null);
+  }
 }
 
 function renderVisualization(letters) {
   const container = document.getElementById("visualization");
+
+  container.classList.toggle("circular-mode", visualizationMode === "circle");
+
+  if (!container) {
+    return;
+  }
+
+  const runId = ++visualizationRun;
+
   container.replaceChildren();
 
   if (!window.d3) {
@@ -178,30 +215,92 @@ function renderVisualization(letters) {
     return;
   }
 
-  const width = 1000;
+  const css = getComputedStyle(document.body);
+
+  const accent = css.getPropertyValue("--accent").trim() || "#64748b";
+
+  const muted = css.getPropertyValue("--muted").trim() || "#64748b";
+
+  const line = css.getPropertyValue("--line").trim() || "#cbd5e1";
+
+  const textColor = css.getPropertyValue("--text").trim() || "#111827";
+
+  const colorScale = getArcColorScale();
+
+  if (visualizationMode === "circle") {
+    renderCircularVisualization({
+      container,
+      letters,
+      runId,
+      accent,
+      muted,
+      line,
+      textColor,
+      colorScale,
+    });
+  } else {
+    renderLinearVisualization({
+      container,
+      letters,
+      runId,
+      accent,
+      muted,
+      line,
+      textColor,
+      colorScale,
+    });
+  }
+
+  if (visualizationToggle) {
+    visualizationToggle.textContent =
+      visualizationMode === "linear"
+        ? "Kreisdiagramm anzeigen"
+        : "Alphabetlinie anzeigen";
+
+    visualizationToggle.setAttribute(
+      "aria-pressed",
+      String(visualizationMode === "circle"),
+    );
+  }
+}
+
+// =============================================
+// 1. LINEAR ALPHABET VISUALIZATION
+// =============================================
+
+function renderLinearVisualization({
+  container,
+  letters,
+  runId,
+  accent,
+  muted,
+  line,
+  textColor,
+  colorScale,
+}) {
+  const width = 1200;
   const height = 250;
   const left = 30;
   const right = width - 30;
-  const baseline = 200;
-
-  const css = getComputedStyle(document.body);
-  const accent = css.getPropertyValue("--accent").trim();
-  const muted = css.getPropertyValue("--muted").trim();
-  const line = css.getPropertyValue("--line").trim();
-  const textColor = css.getPropertyValue("--text").trim();
+  const baseline = 180;
 
   const svg = d3
     .select(container)
     .append("svg")
     .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("width", "100%")
     .attr("role", "img")
-    .attr("aria-label", "Animierte Alphabetgrafik für den eingegebenen Namen");
+    .attr(
+      "aria-label",
+      "Alphabetlinie mit nacheinander animierten Verbindungen der Buchstaben",
+    );
 
   const x = d3
     .scalePoint()
     .domain([...alphabet])
     .range([left, right]);
 
+  // Horizontal baseline
   svg
     .append("line")
     .attr("x1", left)
@@ -211,61 +310,9 @@ function renderVisualization(letters) {
     .attr("stroke", line)
     .attr("stroke-width", 1.5);
 
-  const arcs = svg.append("g");
-
-  // Source - https://stackoverflow.com/a/44476626
-  // Posted by Jonas Wilms, modified by community. See post 'Timeline' for change history
-  // Retrieved 2026-10-25, License - CC BY-SA 4.0
-
-  // Returns a Promise that resolves after "ms" Milliseconds
-  //const timer = (ms) => new Promise((res) => setTimeout(res, ms));
-
-  async function load() {
-    // We need to wrap the loop into an async function for this to work
-
-    // Zeichnet die Bögen in der Reihenfolge der Buchstaben.
-    for (let i = 1; i < letters.length; i++) {
-      console.log(i);
-      //await timer(600); // then the created Promise can be awaited
-
-      const previous = letters[i - 1];
-      const current = letters[i];
-
-      const x1 = x(previous);
-      const x2 = x(current);
-      const arcHeight = Math.min(35 + i * 100, 250);
-      const middleX = (x1 + x2) / 2;
-      const controlY = baseline - arcHeight;
-
-      let pathData;
-
-      if (x1 === x2) {
-        const loopWidth = 22;
-        pathData = `M ${x1} ${baseline}
-        C ${x1 - loopWidth} ${baseline - arcHeight},
-          ${x1 + loopWidth} ${baseline - arcHeight},
-          ${x1} ${baseline}`;
-      } else {
-        pathData = `M ${x1} ${baseline}
-        Q ${middleX} ${controlY} ${x2} ${baseline}`;
-      }
-
-      const path = arcs
-        .append("path")
-        .attr("d", pathData)
-        .attr("fill", "none")
-        .attr("stroke", accent)
-        .attr("stroke-width", 3)
-        .attr("stroke-linecap", "round")
-        .attr("opacity", 0.9);
-
-      await animatePath(path);
-    }
-  }
-  load();
-
   const usedLetters = new Set(letters);
 
+  // Alphabet dots
   svg
     .selectAll(".letter-dot")
     .data([...alphabet])
@@ -276,6 +323,7 @@ function renderVisualization(letters) {
     .attr("r", (letter) => (usedLetters.has(letter) ? 4 : 2))
     .attr("fill", (letter) => (usedLetters.has(letter) ? accent : line));
 
+  // Alphabet labels
   svg
     .selectAll(".letter-label")
     .data([...alphabet])
@@ -289,6 +337,7 @@ function renderVisualization(letters) {
     .attr("fill", (letter) => (usedLetters.has(letter) ? accent : muted))
     .text((letter) => letter);
 
+  // Name above the alphabet
   svg
     .append("text")
     .attr("x", width / 2)
@@ -298,67 +347,292 @@ function renderVisualization(letters) {
     .attr("font-weight", 700)
     .attr("fill", textColor)
     .text(letters || "Gib einen Namen ein");
+
+  const paths = svg.append("g");
+
+  // Animate each connection sequentially.
+  (async () => {
+    for (let i = 1; i < letters.length; i++) {
+      if (runId !== visualizationRun) {
+        return;
+      }
+
+      const previous = letters[i - 1];
+      const current = letters[i];
+
+      const x1 = x(previous);
+      const x2 = x(current);
+
+      const arcHeight = Math.min(35 + i * (height/letters.length), height);
+      const middleX = (x1 + x2) / 2;
+      const controlY = baseline - arcHeight;
+
+      let pathData;
+
+      if (x1 === x2) {
+        // Draw a loop when the same letter occurs twice in a row.
+        const loopWidth = 22;
+
+        pathData =
+          `M ${x1} ${baseline} ` +
+          `C ${x1 - loopWidth} ${baseline - arcHeight}, ` +
+          `${x1 + loopWidth} ${baseline - arcHeight}, ` +
+          `${x1} ${baseline}`;
+      } else {
+        pathData =
+          `M ${x1} ${baseline} ` + `Q ${middleX} ${controlY} ${x2} ${baseline}`;
+      }
+
+      const t = letters.length <= 2 ? 0 : (i - 1) / (letters.length - 2);
+
+      const path = paths
+        .append("path")
+        .attr("d", pathData)
+        .attr("fill", "none")
+        .attr("stroke", colorScale(t))
+        .attr("stroke-width", 3)
+        .attr("stroke-linecap", "round")
+        .attr("opacity", 0.9);
+
+      await animatePath(path, runId);
+    }
+  })();
 }
+
+// =============================================
+// 2. CIRCULAR ALPHABET / CHORD VISUALIZATION
+// =============================================
+
+function renderCircularVisualization({
+  container,
+  letters,
+  runId,
+  accent,
+  muted,
+  line,
+  textColor,
+  colorScale,
+}) {
+
+const width = 300;
+const height = width;
+
+const cx = width / 2;
+const cy = height / 2;
+
+const radius = width/2 -15;
+const labelRadius = radius +10;
+
+  const pointByLetter = new Map();
+
+  // Place all 26 letters evenly around the circle.
+  alphabet.split("").forEach((letter, index) => {
+    const angle = -Math.PI / 2 + (index / alphabet.length) * Math.PI * 2;
+
+    pointByLetter.set(letter, {
+      x: cx + Math.cos(angle) * radius,
+      y: cy + Math.sin(angle) * radius,
+
+      labelX: cx + Math.cos(angle) * labelRadius,
+
+      labelY: cy + Math.sin(angle) * labelRadius,
+
+      angle,
+    });
+  });
+
+  const svg = d3
+    .select(container)
+    .append("svg")
+    .attr("viewBox", `0 0 ${width} ${height}`)
+    .attr("width", "100%")
+    .attr("role", "img")
+    .attr(
+      "aria-label",
+      "Kreisförmiges Alphabetdiagramm mit nacheinander animierten Verbindungen der Buchstaben",
+    );
+
+  // Outer circle
+  svg
+    .append("circle")
+    .attr("cx", cx)
+    .attr("cy", cy)
+    .attr("r", radius)
+    .attr("fill", "none")
+    .attr("stroke", line)
+    .attr("stroke-width", 1.5);
+
+  // Name in the center
+  svg
+    .append("text")
+    .attr("x", cx)
+    .attr("y", cy - 8)
+    .attr("text-anchor", "middle")
+    .attr("font-size", 18)
+    .attr("font-weight", 700)
+    .attr("fill", textColor)
+    .text(letters || "Dein Name");
+
+  // Number of connections
+  svg
+    .append("text")
+    .attr("x", cx)
+    .attr("y", cy + 17)
+    .attr("text-anchor", "middle")
+    .attr("font-size", 12)
+    .attr("fill", muted)
+    .text(
+      letters
+        ? `${Math.max(0, letters.length - 1)} Verbindungen`
+        : "Gib einen Namen ein",
+    );
+
+  const usedLetters = new Set(letters);
+
+  // Dots around the circle
+  svg
+    .selectAll(".circle-letter-dot")
+    .data([...alphabet])
+    .join("circle")
+    .attr("class", "circle-letter-dot")
+    .attr("cx", (letter) => pointByLetter.get(letter).x)
+    .attr("cy", (letter) => pointByLetter.get(letter).y)
+    .attr("r", (letter) => (usedLetters.has(letter) ? 4.5 : 2.5))
+    .attr("fill", (letter) => (usedLetters.has(letter) ? accent : line));
+
+  // Letters around the circle
+  svg
+    .selectAll(".circle-letter-label")
+    .data([...alphabet])
+    .join("text")
+    .attr("class", "circle-letter-label")
+    .attr("x", (letter) => pointByLetter.get(letter).labelX)
+    .attr("y", (letter) => pointByLetter.get(letter).labelY)
+    .attr("text-anchor", "middle")
+    .attr("dominant-baseline", "central")
+    .attr("font-size", 15)
+    .attr("font-weight", (letter) => (usedLetters.has(letter) ? 750 : 400))
+    .attr("fill", (letter) => (usedLetters.has(letter) ? accent : muted))
+    .text((letter) => letter);
+
+  const chords = svg.append("g").attr("class", "sequence-chords");
+
+  // Animate connections in the exact order of the name.
+  (async () => {
+    for (let i = 1; i < letters.length; i++) {
+      if (runId !== visualizationRun) {
+        return;
+      }
+
+      const previous = pointByLetter.get(letters[i - 1]);
+      const current = pointByLetter.get(letters[i]);
+
+      // Each chord passes through the center of the circle.
+      const pathData =
+        `M ${previous.x} ${previous.y} ` +
+        `Q ${cx} ${cy} ${current.x} ${current.y}`;
+
+      const t = letters.length <= 2 ? 0 : (i - 1) / (letters.length - 2);
+
+      const path = chords
+        .append("path")
+        .attr("d", pathData)
+        .attr("fill", "none")
+        .attr("stroke", colorScale(t))
+        .attr("stroke-width", 2.8)
+        .attr("stroke-linecap", "round")
+        .attr("opacity", 0.82);
+
+      await animatePath(path, runId);
+    }
+  })();
+}
+
+// =============================================
+// 3. NUMEROLOGY
+// =============================================
 
 function updateNumerology(sum, root) {
   const meaning = meanings[root.value];
 
   document.getElementById("numberOrb").textContent = root.value;
+
   document.getElementById("meaningTitle").textContent = meaning.title;
+
   document.getElementById("meaningText").textContent = meaning.text;
 
   const steps = document.getElementById("numberSteps");
+
   steps.replaceChildren();
 
   root.steps.forEach((number, index) => {
     if (index > 0) {
       const arrow = document.createElement("span");
+
       arrow.className = "arrow";
       arrow.textContent = "→";
+
       steps.appendChild(arrow);
     }
 
     const chip = document.createElement("span");
+
     chip.className = "step";
     chip.textContent = number;
+
     steps.appendChild(chip);
   });
 
   if (root.steps.length === 1 && sum === 0) {
     const note = document.createElement("span");
+
     note.className = "step";
     note.textContent = "Keine Buchstabenwerte";
+
     steps.appendChild(note);
   }
 }
 
+// =============================================
+// 4. UPDATE ALL RESULTS
+// =============================================
+
 function update() {
   const rawName = input.value;
   const letters = getLetters(rawName);
+
   const values = [...letters].map(letterValue);
+
   const sum = values.reduce((total, value) => total + value, 0);
 
   const root = getDigitalRoot(sum);
   const factors = getPrimeFactors(sum);
+
   const distinctFactors = [...new Set(factors)];
 
+  // Total letter value
   document.getElementById("sumValue").textContent = sum;
+
   document.getElementById("sumDetail").textContent = values.length
     ? values.join(" + ")
     : "Noch keine Buchstaben";
 
+  // Digital root
   document.getElementById("rootValue").textContent = root.value;
+
   document.getElementById("rootDetail").textContent =
     root.steps.length > 1
       ? root.steps.join(" → ")
       : "Keine weitere Reduktion nötig";
 
+  // Scrabble score
   document.getElementById("scrabbleValue").textContent =
     getScrabbleScore(rawName);
 
   document.getElementById("scrabbleDetail").textContent =
-    "";
+    "Summe im deutschen Scrabble";
 
+  // Prime factors
   document.getElementById("primeValue").textContent = distinctFactors.length
     ? distinctFactors.join(", ")
     : "Keine";
@@ -368,27 +642,36 @@ function update() {
       ? "Für Werte unter 2 gibt es keine Primfaktorzerlegung."
       : `${sum} = ${factors.join(" × ")}`;
 
+  // Individual letter values
   document.getElementById("letterDetails").textContent = letters
     ? [...letters]
         .map((letter) => `${letter} = ${letterValue(letter)}`)
         .join(" · ")
     : "Gib einen Namen ein, um die Buchstabenwerte zu sehen.";
 
+  // Numerology meaning
   updateNumerology(sum, root);
+
+  // Visualization
   renderVisualization(letters);
 }
 
+// =============================================
+// 5. DARK MODE
+// =============================================
+
 function applyTheme(dark) {
   document.body.classList.toggle("dark", dark);
+
   themeToggle.textContent = dark ? "☀️ Light Mode" : "🌙 Dark Mode";
 
   try {
     localStorage.setItem("alphabet-arcs-theme", dark ? "dark" : "light");
   } catch (error) {
-    // Die Seite funktioniert auch, wenn localStorage gesperrt ist.
+    // The page also works when localStorage is blocked.
   }
 
-  // Die Grafikfarben an das neue Theme anpassen.
+  // Re-render the visualization with the updated theme colors.
   renderVisualization(getLetters(input.value));
 }
 
@@ -396,19 +679,59 @@ themeToggle.addEventListener("click", () => {
   applyTheme(!document.body.classList.contains("dark"));
 });
 
+// =============================================
+// 6. VISUALIZATION TOGGLE BUTTON
+// =============================================
+
+if (visualizationToggle) {
+  visualizationToggle.addEventListener("click", () => {
+    visualizationMode =
+      visualizationMode === "linear" ? "circle" : "linear";
+
+    const container = document.getElementById("visualization");
+    const metrics = document.querySelector(".metrics");
+    const isCircular = visualizationMode === "circle";
+
+    if (container) {
+      container.classList.toggle("circular-mode", isCircular);
+    }
+
+    if (metrics) {
+      metrics.classList.toggle("metrics-hidden", isCircular);
+    }
+
+    renderVisualization(getLetters(input.value));
+  });
+}
+
+// =============================================
+// 7. INPUT EVENTS
+// =============================================
+
+// Clear the input when the user focuses on it.
+input.addEventListener("focus", () => {
+  input.value = "";
+});
+
+// Update all results when the name changes.
 input.addEventListener("input", update);
 
-// Gespeichertes Theme beim Start wiederherstellen.
+// =============================================
+// 8. RESTORE THEME AND INITIALIZE
+// =============================================
+
 let savedTheme = "light";
 
 try {
   savedTheme = localStorage.getItem("alphabet-arcs-theme") || "light";
 } catch (error) {
-  // Standardmäßig helles Theme.
+  // Use light mode if localStorage is unavailable.
 }
 
 document.body.classList.toggle("dark", savedTheme === "dark");
+
 themeToggle.textContent =
   savedTheme === "dark" ? "☀️ Light Mode" : "🌙 Dark Mode";
 
+// Initial render
 update();
