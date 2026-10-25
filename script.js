@@ -357,7 +357,7 @@ function update() {
     getScrabbleScore(rawName);
 
   document.getElementById("scrabbleDetail").textContent =
-    "Summe im deutschen Scrabble";
+    "";
 
   document.getElementById("primeValue").textContent = distinctFactors.length
     ? distinctFactors.join(", ")
