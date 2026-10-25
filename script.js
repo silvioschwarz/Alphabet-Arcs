@@ -199,11 +199,11 @@ async function animatePath(path, runId) {
 function renderVisualization(letters) {
   const container = document.getElementById("visualization");
 
-  container.classList.toggle("circular-mode", visualizationMode === "circle");
-
   if (!container) {
     return;
   }
+
+  container.classList.toggle("circular-mode", visualizationMode === "circle");
 
   const runId = ++visualizationRun;
 
@@ -278,11 +278,15 @@ function renderLinearVisualization({
   textColor,
   colorScale,
 }) {
-  const width = 1200;
-  const height = 250;
-  const left = 30;
-  const right = width - 30;
-  const baseline = 180;
+  // Use the available container width so the linear chart fits on phones
+  // without a horizontal scrollbar.
+  const width = Math.max(container.clientWidth || 700, 320);
+  const height = 220;
+  const left = 12;
+  const right = width - 12;
+  const baseline = 150;
+  const labelFontSize = Math.max(10, Math.min(19, width / 55));
+  const nameFontSize = Math.max(13, Math.min(18, width / 60));
 
   const svg = d3
     .select(container)
@@ -332,7 +336,7 @@ function renderLinearVisualization({
     .attr("x", (letter) => x(letter))
     .attr("y", baseline + 28)
     .attr("text-anchor", "middle")
-    .attr("font-size", 19)
+    .attr("font-size", labelFontSize)
     .attr("font-weight", (letter) => (usedLetters.has(letter) ? 750 : 400))
     .attr("fill", (letter) => (usedLetters.has(letter) ? accent : muted))
     .text((letter) => letter);
@@ -343,7 +347,7 @@ function renderLinearVisualization({
     .attr("x", width / 2)
     .attr("y", 24)
     .attr("text-anchor", "middle")
-    .attr("font-size", 18)
+    .attr("font-size", nameFontSize)
     .attr("font-weight", 700)
     .attr("fill", textColor)
     .text(letters || "Gib einen Namen ein");
@@ -420,8 +424,9 @@ const height = width;
 const cx = width / 2;
 const cy = height / 2;
 
-const radius = width/2 -15;
-const labelRadius = radius +10;
+// Leave enough room around the edge for all 26 letter labels.
+const radius = width / 2 - 34;
+const labelRadius = radius + 15;
 
   const pointByLetter = new Map();
 

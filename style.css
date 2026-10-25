@@ -161,22 +161,23 @@ input:focus {
   text-align: center;
 }
 
-/* Visualisierungskarte */
+/* Visualization card and responsive chart container */
 .visual-card {
   height: auto;
-  max-height: 20dvw;
+  max-height: none;
+  min-width: 0;
   overflow: visible;
 }
 
-/* Visualisierungsbereich */
 #visualization {
   display: flex;
-  flex-direction: column; 
+  justify-content: center;
+  align-items: center;
   width: 100%;
   min-width: 0;
-  max-height: 30dvh;
+  max-height: none;
   margin: 0 auto;
-  overflow: visible;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
@@ -184,22 +185,27 @@ input:focus {
   display: block;
   width: 100%;
   height: auto;
+  flex: 1 1 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 
-/* Kreisdiagramm */
+/* Keep the circular chart square and centered */
 #visualization.circular-mode {
-  display: flex;
-  justify-content: center;
-  align-items: center;
   width: 100%;
-  max-height: 30dvh;
-  margin: 0 0;
+  max-width: 500px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  overflow: visible;
 }
 
 #visualization.circular-mode svg {
-  display: block;
   width: 100%;
-  }
+  height: auto;
+  max-width: 100%;
+  margin: 0 auto;
+}
 
 /* Metrikkarten im Kreismodus ausblenden */
 .metrics.metrics-hidden {
@@ -322,7 +328,20 @@ footer {
 
 @media (max-width: 600px) {
   body {
-    padding: 25px 11px 35px;
+    padding: 18px 12px 30px;
+  }
+
+  main {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  header {
+    margin-bottom: 22px;
+  }
+
+  h1 {
+    font-size: clamp(32px, 9vw, 44px);
   }
 
   .theme-toggle {
@@ -337,11 +356,52 @@ footer {
   }
 
   .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
 
+  .metric {
+    padding: 14px;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    line-height: 1.45;
+    letter-spacing: .04em;
+  }
+
   .metric-value {
-    font-size: 28px;
+    font-size: clamp(23px, 7vw, 28px);
+  }
+
+  #visualization:not(.circular-mode) {
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #visualization:not(.circular-mode) svg {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+  }
+
+  #visualization.circular-mode {
+    width: 100%;
+    max-width: min(100%, 420px);
+    aspect-ratio: 1 / 1;
+    margin: 0 auto;
+  }
+
+  #visualization.circular-mode svg {
+    width: 100%;
+    height: auto;
+  }
+
+  #visualizationToggle {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin: 10px 0 16px;
   }
 
   .numerology-top {
@@ -390,23 +450,4 @@ footer {
   outline-offset: 3px;
 }
 
-/* Visualization container */
-#visualization {
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
-
-#visualization svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-/* Smaller screens */
-@media (max-width: 600px) {
-  #visualizationToggle {
-    width: 100%;
-    margin-bottom: 14px;
-  }
-}
+/* Visualization layout rules are defined in the main responsive section above. */
